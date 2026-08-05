@@ -94,7 +94,9 @@ const emit = defineEmits<{
 
 // 含 ${...} 字面量的文案不能使用 t`...` 模板字符串（会被当作插值），
 // 这里用 translate() 普通字符串调用，翻译键与 i18n/en.json 保持一致
-const helpNamingFile = translate('用对话中希望引用的名字命名文件，例如「远坂凛.png」，方便后续用 ${远坂凛} 占位符调用。');
+const helpNamingFile = translate(
+  '用对话中希望引用的名字命名文件，例如「远坂凛.png」，方便后续用 ${远坂凛} 占位符调用。',
+);
 const helpPlaceholderExample = translate(
   '在角色卡或系统提示中告诉 AI：需要在文中展示插图时，在合适的位置写出 ${图片名} 占位符，例如「她推开门，${远坂凛} 抬头看了过来」。',
 );
