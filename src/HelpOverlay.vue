@@ -94,15 +94,13 @@ const emit = defineEmits<{
 
 // 含 ${...} 字面量的文案不能使用 t`...` 模板字符串（会被当作插值），
 // 这里用 translate() 普通字符串调用，翻译键与 i18n/en.json 保持一致
-const helpNamingFile = translate(
-  '用对话中希望引用的名字命名文件，例如「远坂凛.png」，方便后续用 ${远坂凛} 占位符调用。',
-);
+const helpNamingFile = translate('用对话中希望引用的名字命名文件，例如「奶龙_微笑.png」，方便后续用 ${奶龙_微笑} 占位符调用。');
 const helpPlaceholderExample = translate(
-  '在角色卡或系统提示中告诉 AI：需要在文中展示插图时，在合适的位置写出 ${图片名} 占位符，例如「她推开门，${远坂凛} 抬头看了过来」。',
+  '在角色卡或系统提示中告诉 AI：需要在文中展示插图时，在合适的位置写出 ${图片名} 占位符，例如「她推开门，抬头看了过来。${奶龙_微笑}」。',
 );
-const helpPromptExample = translate('提示词示例：「当场景中出现角色远坂凛时，在正文中合适的位置插入 ${远坂凛}。」');
+const helpPromptExample = translate('提示词示例：「当场景中角色出现特定表情时，在正文中合适的位置插入对应表情，如 ${奶龙_微笑}。」');
 const helpMatchingRules = translate(
-  '匹配规则：不区分大小写，可带扩展名（${远坂凛.png} 也能匹配）；会按文件名在所有角色目录中查找；代码块内的占位符不会被替换。',
+  '匹配规则：不区分大小写，可带扩展名（${奶龙_微笑.png} 也能匹配）；会按文件名在所有角色目录中查找；代码块内的占位符不会被替换。',
 );
 
 function close() {
