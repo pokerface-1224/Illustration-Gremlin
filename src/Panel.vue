@@ -73,6 +73,16 @@
         />
 
         <hr class="sysHR" />
+
+        <!-- 使用说明 -->
+        <div class="tmk-help-button-row">
+          <button class="menu_button tmk-help-button" type="button" @click="helpOpen = true">
+            <i class="fa-solid fa-circle-question"></i>
+            {{ t`使用说明` }}
+          </button>
+        </div>
+
+        <HelpOverlay v-if="helpOpen" @close="helpOpen = false" />
       </div>
     </div>
   </div>
@@ -80,6 +90,7 @@
 
 <script setup lang="ts">
 import { event_types, eventSource } from '@sillytavern/scripts/events';
+import HelpOverlay from '@/HelpOverlay.vue';
 import PreviewOverlay from '@/PreviewOverlay.vue';
 import { getCurrentCharacterName } from '@/util/character';
 import { extractZipImages } from '@/util/archive';
@@ -97,6 +108,7 @@ const importing = ref(false);
 const currentCharacter = ref<string | null>(null);
 const images = ref<string[]>([]);
 const previewOpen = ref(false);
+const helpOpen = ref(false);
 
 const selectedFileNames = computed(() => selectedFiles.value.map(file => file.name));
 
@@ -254,6 +266,18 @@ onBeforeUnmount(() => {
   box-shadow: inset 0 0 0 1px var(--SmartThemeBodyColor, currentColor);
 }
 
+.tmk-help-button-row {
+  display: flex;
+  justify-content: center;
+  margin: 12px 0 4px;
+}
+
+.tmk-help-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .tmk-label {
   color: var(--SmartThemeBodyColor, inherit);
   opacity: 0.75;
@@ -274,5 +298,4 @@ onBeforeUnmount(() => {
   font-size: 0.85em;
   word-break: break-all;
 }
-
 </style>
