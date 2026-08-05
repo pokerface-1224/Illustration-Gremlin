@@ -1,5 +1,6 @@
 node_modules
 illustrations
+.codex
 
 .DS_Store
 Thumbs.db
