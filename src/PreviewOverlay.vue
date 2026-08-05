@@ -26,11 +26,7 @@
       </div>
 
       <!-- 大图预览 -->
-      <div
-        v-if="selectedIndex >= 0 && currentImage"
-        class="tmk-lightbox"
-        @click.self="selectedIndex = -1"
-      >
+      <div v-if="selectedIndex >= 0 && currentImage" class="tmk-lightbox" @click.self="selectedIndex = -1">
         <button class="tmk-nav tmk-nav-prev" type="button" title="‹" @click="prev">
           <i class="fa-solid fa-chevron-left"></i>
         </button>

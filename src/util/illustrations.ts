@@ -4,16 +4,7 @@ import type { ArchiveImage } from '@/util/archive';
 
 const ILLUSTRATIONS_ROOT = 'illustrations';
 
-const IMAGE_EXTENSIONS = new Set([
-  '.png',
-  '.jpg',
-  '.jpeg',
-  '.gif',
-  '.webp',
-  '.bmp',
-  '.avif',
-  '.svg',
-]);
+const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.avif', '.svg']);
 
 /** Windows / 通用文件系统不允许出现在目录名中的字符 */
 const INVALID_PATH_CHARS = /[<>:"/\\|?*]/g;
@@ -61,10 +52,7 @@ function makeUniqueName(fileName: string, existing: Set<string>): string {
 }
 
 /** 写入图片到沙箱 illustrations/<角色名>/ 目录, 重名时自动追加序号 */
-export async function writeCharacterImages(
-  characterName: string,
-  images: ArchiveImage[],
-): Promise<string[]> {
+export async function writeCharacterImages(characterName: string, images: ArchiveImage[]): Promise<string[]> {
   const root = await getIllustrationsRoot();
   const characterDir = await root.getDirectoryHandle(sanitizeDirectoryName(characterName), { create: true });
   const existing = new Set<string>();
@@ -111,10 +99,7 @@ export async function listCharacterImages(characterName: string): Promise<string
 }
 
 /** 读取沙箱中某角色的某张图片 */
-export async function readCharacterImage(
-  characterName: string,
-  relativePath: string,
-): Promise<Blob | null> {
+export async function readCharacterImage(characterName: string, relativePath: string): Promise<Blob | null> {
   const root = await getIllustrationsRoot();
   let characterDir: FileSystemDirectoryHandle;
   try {
@@ -160,17 +145,13 @@ export async function deleteCharacterImage(characterName: string, relativePath: 
 }
 
 /** 按文件名（不含扩展名）查找沙箱 illustrations/ 下的图片, 返回 Blob 与相对路径 */
-export async function findImageByName(
-  query: string,
-): Promise<{ blob: Blob; relativePath: string } | null> {
+export async function findImageByName(query: string): Promise<{ blob: Blob; relativePath: string } | null> {
   const normalized = normalizeImageQuery(query);
   if (!normalized) return null;
 
   illustrationIndexCache ??= await buildIllustrationIndex();
   const lower = normalized.toLowerCase();
-  const entry =
-    illustrationIndexCache.byFullName.get(lower) ??
-    illustrationIndexCache.byBaseName.get(lower);
+  const entry = illustrationIndexCache.byFullName.get(lower) ?? illustrationIndexCache.byBaseName.get(lower);
   if (!entry) return null;
 
   const blob = await readIllustrationByRelativePath(entry.relativePath);
@@ -183,9 +164,7 @@ export function clearImageLookupCache(): void {
 }
 
 /** 读取沙箱 illustrations/ 下任意相对路径的图片 */
-export async function readIllustrationByRelativePath(
-  relativePath: string,
-): Promise<Blob | null> {
+export async function readIllustrationByRelativePath(relativePath: string): Promise<Blob | null> {
   const root = await getIllustrationsRoot();
   const parts = relativePath.split('/').filter(Boolean);
   const fileName = parts.pop();

@@ -1,12 +1,5 @@
 <template>
-  <img
-    v-if="url"
-    ref="element"
-    class="tmk-thumb"
-    :src="url"
-    :alt="path"
-    @error="onError"
-  />
+  <img v-if="url" ref="element" class="tmk-thumb" :src="url" :alt="path" @error="onError" />
   <div v-else ref="element" class="tmk-thumb tmk-thumb-placeholder"></div>
 </template>
 
