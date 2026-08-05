@@ -1,5 +1,21 @@
 {
-  "插件示例": "Plugin Example",
-  "示例按钮": "Example Button",
-  "示例开关": "Example Switch"
+  "捣蛋鬼的禁书库": "Troublemaker's Forbidden Library",
+  "当前角色": "Current Character",
+  "未打开角色卡": "No character card open",
+  "导入图包": "Import Image Pack",
+  "导入中…": "Importing…",
+  "支持 zip 压缩包": "Supports zip archives",
+  "仅支持 zip 压缩包，请先将图片打包为 zip 再导入": "Only zip archives are supported. Please pack the images into a zip first",
+  "图片保存在浏览器沙箱中，无需授权；清除浏览器数据会删除已导入的图片": "Images are stored in the browser sandbox; no authorization needed. Clearing browser data will delete imported images",
+  "插图": "Illustrations",
+  "预览插图": "Preview Illustrations",
+  "插图预览": "Illustrations Preview",
+  "关闭": "Close",
+  "暂无插图": "No illustrations yet",
+  "删除": "Delete",
+  "请先打开一个角色卡再导入图包": "Open a character card before importing an image pack",
+  "导入成功：共 ${0} 张图片": "Imported ${0} images",
+  "压缩包中没有找到图片文件": "No image files found in the archive",
+  "确定删除图片 ${0} 吗？": "Delete image ${0}?",
+  "已删除 ${0}": "Deleted ${0}"
 }

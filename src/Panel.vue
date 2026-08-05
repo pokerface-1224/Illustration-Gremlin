@@ -1,19 +1,76 @@
 <template>
-  <div class="example-extension-settings">
+  <div class="troublemaker-extension-settings">
     <div class="inline-drawer">
       <div class="inline-drawer-toggle inline-drawer-header">
-        <b>{{ t`插件示例` }}</b>
+        <b>{{ t`捣蛋鬼的禁书库` }}</b>
         <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
       </div>
       <div class="inline-drawer-content">
-        <div class="example-extension_block flex-container">
-          <input class="menu_button" type="submit" :value="t`示例按钮`" @click="handle_button_click" />
+        <!-- 当前角色 -->
+        <div class="tmk-block flex-container">
+          <span class="tmk-label">{{ t`当前角色` }}</span>
+          <strong class="tmk-character-name" :class="{ 'tmk-muted': !currentCharacter }">
+            {{ currentCharacter || t`未打开角色卡` }}
+          </strong>
         </div>
 
-        <div class="example-extension_block flex-container">
-          <input v-model="settings.button_selected" type="checkbox" />
-          <label for="example_setting">{{ t`示例开关` }}</label>
+        <!-- 图包导入 -->
+        <div class="tmk-block">
+          <div class="tmk-import-row flex-container">
+            <input
+              ref="fileInput"
+              class="tmk-file-input"
+              type="file"
+              accept=".zip"
+              multiple
+              @change="onFilesSelected"
+            />
+            <div class="tmk-buttons">
+              <input
+                class="menu_button"
+                type="button"
+                :value="importing ? t`导入中…` : t`导入图包`"
+                :disabled="importing"
+                @click="onImportClick"
+              />
+              <input
+                class="menu_button tmk-preview-button"
+                type="button"
+                :value="t`预览插图`"
+                :disabled="images.length === 0"
+                @click="previewOpen = true"
+              />
+            </div>
+          </div>
+          <div class="tmk-hint">
+            <span v-if="selectedFileNames.length">
+              {{ selectedFileNames.join('、') }}
+            </span>
+            <span v-else>{{ t`支持 zip 压缩包` }}</span>
+          </div>
         </div>
+
+        <div class="tmk-block">
+          <div class="tmk-hint">
+            {{ t`图片保存在浏览器沙箱中，无需授权；清除浏览器数据会删除已导入的图片` }}
+          </div>
+        </div>
+
+        <!-- 插图列表 -->
+        <div class="tmk-block">
+          <div class="flex-container">
+            <span class="tmk-label">{{ t`插图` }}</span>
+            <span class="tmk-hint">{{ images.length }} 张</span>
+          </div>
+        </div>
+
+        <PreviewOverlay
+          v-if="previewOpen && currentCharacter"
+          :character="currentCharacter"
+          :images="images"
+          @close="previewOpen = false"
+          @delete="onDeleteImage"
+        />
 
         <hr class="sysHR" />
       </div>
@@ -22,14 +79,200 @@
 </template>
 
 <script setup lang="ts">
-import { useSettingsStore } from '@/store/settings';
-import { storeToRefs } from 'pinia';
+import { event_types, eventSource } from '@sillytavern/scripts/events';
+import PreviewOverlay from '@/PreviewOverlay.vue';
+import { getCurrentCharacterName } from '@/util/character';
+import { extractZipImages } from '@/util/archive';
+import {
+  clearImageLookupCache,
+  deleteCharacterImage,
+  listCharacterImages,
+  writeCharacterImages,
+} from '@/util/illustrations';
+import { clearPlaceholderUrlCache, reprocessAllMessages } from '@/util/placeholderImages';
 
-const { settings } = storeToRefs(useSettingsStore());
+const fileInput = ref<HTMLInputElement | null>(null);
+const selectedFiles = ref<File[]>([]);
+const importing = ref(false);
+const currentCharacter = ref<string | null>(null);
+const images = ref<string[]>([]);
+const previewOpen = ref(false);
 
-const handle_button_click = () => {
-  toastr.success('你好呀!');
-};
+const selectedFileNames = computed(() => selectedFiles.value.map(file => file.name));
+
+function updateCurrentCharacter() {
+  currentCharacter.value = getCurrentCharacterName();
+  void refreshImages();
+}
+
+async function refreshImages() {
+  const character = currentCharacter.value;
+  if (!character) {
+    images.value = [];
+    return;
+  }
+  try {
+    images.value = await listCharacterImages(character);
+  } catch (error) {
+    console.warn('读取插图失败', error);
+    images.value = [];
+  }
+  // 图片列表变化后, 让聊天中的 ${名称} 占位符重新查找图片
+  clearImageLookupCache();
+  clearPlaceholderUrlCache();
+  reprocessAllMessages();
+}
+
+function onFilesSelected(event: Event) {
+  const input = event.target as HTMLInputElement;
+  selectedFiles.value = Array.from(input.files ?? []);
+  // 选好文件后自动开始导入
+  if (!importing.value && selectedFiles.value.length > 0) {
+    void onImportClick();
+  }
+}
+
+async function onImportClick() {
+  if (importing.value) {
+    return;
+  }
+  const character = currentCharacter.value;
+  if (!character) {
+    toastr.warning(t`请先打开一个角色卡再导入图包`);
+    return;
+  }
+  if (selectedFiles.value.length === 0) {
+    // 兜底: 从 DOM 输入框直接读取, 避免状态丢失
+    const domFiles = fileInput.value?.files;
+    if (domFiles && domFiles.length > 0) {
+      selectedFiles.value = Array.from(domFiles);
+    } else {
+      // 未选择任何文件时, 直接打开文件选择框
+      fileInput.value?.click();
+      return;
+    }
+  }
+
+  importing.value = true;
+  const files = selectedFiles.value;
+  try {
+    let importedCount = 0;
+    for (const file of files) {
+      importedCount += await importOneFile(file, character);
+    }
+    toastr.success(t`导入成功：共 ${importedCount} 张图片`);
+    void refreshImages();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    toastr.error(message);
+  } finally {
+    importing.value = false;
+    // 仅在导入期间没有新选择时清理, 避免丢失用户刚选的新文件
+    if (selectedFiles.value === files) {
+      selectedFiles.value = [];
+      if (fileInput.value) {
+        fileInput.value.value = '';
+      }
+    }
+  }
+}
+
+async function importOneFile(file: File, character: string): Promise<number> {
+  const extension = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+  if (extension !== '.zip') {
+    throw new Error(t`仅支持 zip 压缩包，请先将图片打包为 zip 再导入`);
+  }
+
+  const imagesInArchive = await extractZipImages(file);
+  if (imagesInArchive.length === 0) {
+    throw new Error(t`压缩包中没有找到图片文件`);
+  }
+  await writeCharacterImages(character, imagesInArchive);
+  return imagesInArchive.length;
+}
+
+async function onDeleteImage(relativePath: string) {
+  const character = currentCharacter.value;
+  if (!character) return;
+  if (!confirm(t`确定删除图片 ${relativePath} 吗？`)) return;
+
+  try {
+    await deleteCharacterImage(character, relativePath);
+    toastr.success(t`已删除 ${relativePath}`);
+    void refreshImages();
+  } catch (error) {
+    toastr.error(error instanceof Error ? error.message : String(error));
+  }
+}
+
+onMounted(() => {
+  updateCurrentCharacter();
+  eventSource.on(event_types.CHAT_CHANGED, updateCurrentCharacter);
+});
+
+onBeforeUnmount(() => {
+  eventSource.removeListener(event_types.CHAT_CHANGED, updateCurrentCharacter);
+});
 </script>
 
-<style scoped></style>
+<style scoped>
+.tmk-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 8px 0;
+}
+
+.tmk-import-row {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tmk-file-input {
+  flex: 1;
+  min-width: 180px;
+  max-width: 280px;
+}
+
+.tmk-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 116px;
+  flex-shrink: 0;
+}
+
+.tmk-buttons input {
+  width: 100%;
+  margin: 0;
+}
+
+/* 预览按钮与主按钮大小一致, 用描边样式作区分 */
+.tmk-preview-button {
+  background: transparent;
+  color: var(--SmartThemeBodyColor, inherit);
+  box-shadow: inset 0 0 0 1px var(--SmartThemeBodyColor, currentColor);
+}
+
+.tmk-label {
+  color: var(--SmartThemeBodyColor, inherit);
+  opacity: 0.75;
+  min-width: 88px;
+}
+
+.tmk-character-name {
+  word-break: break-all;
+}
+
+.tmk-muted {
+  opacity: 0.5;
+}
+
+.tmk-hint {
+  color: var(--SmartThemeBodyColor, inherit);
+  opacity: 0.6;
+  font-size: 0.85em;
+  word-break: break-all;
+}
+
+</style>

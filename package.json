@@ -1,5 +1,5 @@
 {
-  "name": "<插件名称>",
+  "name": "捣蛋鬼的禁书库",
   "version": "1.0.0",
   "scripts": {
     "build": "vite build",
