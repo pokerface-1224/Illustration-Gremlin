@@ -45,7 +45,7 @@
               {{ t`收集要分发的图片，支持 png / jpg / jpeg / gif / webp / bmp / avif / svg 格式。` }}
             </li>
             <li>
-              {{ t('用对话中希望引用的名字命名文件，例如「远坂凛.png」，方便后续用 ${远坂凛} 占位符调用。') }}
+              {{ helpNamingFile }}
             </li>
             <li>
               {{ t`把图片放入 zip 压缩包（可建子文件夹，导入时会自动展平目录结构）。` }}
@@ -67,25 +67,17 @@
           </h2>
           <ol class="tmk-help-list">
             <li>
-              {{
-                t(
-                  '在角色卡或系统提示中告诉 AI：需要在文中展示插图时，在合适的位置写出 ${图片名} 占位符，例如「她推开门，${远坂凛} 抬头看了过来」。',
-                )
-              }}
+              {{ helpPlaceholderExample }}
             </li>
             <li>
               {{ t`AI 输出包含占位符后，消息发送或生成时，插件会自动把占位符替换为对应图片。` }}
             </li>
             <li>
-              {{ t('提示词示例：「当场景中出现角色远坂凛时，在正文中合适的位置插入 ${远坂凛}。」') }}
+              {{ helpPromptExample }}
             </li>
           </ol>
           <p class="tmk-help-note">
-            {{
-              t(
-                '匹配规则：不区分大小写，可带扩展名（${远坂凛.png} 也能匹配）；会按文件名在所有角色目录中查找；代码块内的占位符不会被替换。',
-              )
-            }}
+            {{ helpMatchingRules }}
           </p>
         </section>
       </div>
@@ -94,9 +86,22 @@
 </template>
 
 <script setup lang="ts">
+import { translate } from '@sillytavern/scripts/i18n';
+
 const emit = defineEmits<{
   close: [];
 }>();
+
+// 含 ${...} 字面量的文案不能使用 t`...` 模板字符串（会被当作插值），
+// 这里用 translate() 普通字符串调用，翻译键与 i18n/en.json 保持一致
+const helpNamingFile = translate('用对话中希望引用的名字命名文件，例如「远坂凛.png」，方便后续用 ${远坂凛} 占位符调用。');
+const helpPlaceholderExample = translate(
+  '在角色卡或系统提示中告诉 AI：需要在文中展示插图时，在合适的位置写出 ${图片名} 占位符，例如「她推开门，${远坂凛} 抬头看了过来」。',
+);
+const helpPromptExample = translate('提示词示例：「当场景中出现角色远坂凛时，在正文中合适的位置插入 ${远坂凛}。」');
+const helpMatchingRules = translate(
+  '匹配规则：不区分大小写，可带扩展名（${远坂凛.png} 也能匹配）；会按文件名在所有角色目录中查找；代码块内的占位符不会被替换。',
+);
 
 function close() {
   emit('close');

@@ -15,10 +15,18 @@ const externals = {
   '@popperjs/core': 'Popper',
 } as const;
 
-const relative_sillytavern_path = path.relative(
-  path.join(__dirname, 'dist'),
-  __dirname.substring(0, __dirname.lastIndexOf('public') + 6),
-);
+function resolveSillyTavernRelativePath(): string {
+  const publicIndex = __dirname.lastIndexOf('public');
+  if (publicIndex >= 0) {
+    // 仓库位于 SillyTavern public 目录内: <ST>/public/scripts/extensions/third-party/<扩展名>
+    return path.relative(path.join(__dirname, 'dist'), __dirname.substring(0, publicIndex + 6));
+  }
+  // 仓库在 SillyTavern 之外构建时, 按标准第三方扩展布局计算:
+  // <ST>/public/scripts/extensions/third-party/<扩展名>/dist → <ST>/public 需要上溯 5 级
+  return path.join('..', '..', '..', '..', '..');
+}
+
+const relative_sillytavern_path = resolveSillyTavernRelativePath();
 
 export default defineConfig(({ mode }) => ({
   plugins: [
