@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
   "name": "Illustration-Gremlin",
+=======
+  "name": "<插件名称>",
+>>>>>>> 8ebf7b943adddbb972ccd0163fdf8a3ff94673c9
   "version": "1.0.0",
   "scripts": {
     "build": "vite build",
