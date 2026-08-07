@@ -196,9 +196,60 @@ function decodeCP437(bytes: Uint8Array): string {
   return result;
 }
 
+/** 校验字节序列是否为合法的 GBK/GB18030 编码 (1/2/4 字节序列) */
+function isValidGB18030(bytes: Uint8Array): boolean {
+  for (let i = 0; i < bytes.length; i++) {
+    const byte = bytes[i];
+    if (byte < 0x80) continue;
+    // 首字节范围: 0x81-0xFE
+    if (byte < 0x81 || byte > 0xfe) return false;
+
+    const second = bytes[i + 1];
+    if (second === undefined) return false;
+    if (second >= 0x30 && second <= 0x39) {
+      // 4 字节 GB18030 序列: 0x81-0xFE 0x30-0x39 0x81-0xFE 0x30-0x39
+      const third = bytes[i + 2];
+      const fourth = bytes[i + 3];
+      if (third === undefined || fourth === undefined) return false;
+      if (third < 0x81 || third > 0xfe || fourth < 0x30 || fourth > 0x39) return false;
+      i += 3;
+    } else if (second >= 0x40 && second <= 0xfe && second !== 0x7f) {
+      // 2 字节 GBK 序列
+      i += 1;
+    } else {
+      return false;
+    }
+  }
+  return true;
+}
+
+/** 尝试按 GB18030 解码; 字节序列合法且结果含 CJK 汉字时返回解码结果, 否则返回 null */
+function tryDecodeGB18030(bytes: Uint8Array): string | null {
+  if (!isValidGB18030(bytes)) return null;
+  try {
+    const decoded = new TextDecoder('gb18030').decode(bytes);
+    // 中文 Windows 的压缩工具 (如资源管理器) 默认用 GBK 编码文件名且不设 UTF-8 标志
+    const hasCjk = /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/.test(decoded);
+    return hasCjk ? decoded : null;
+  } catch {
+    return null;
+  }
+}
+
 function decodeFileName(bytes: Uint8Array, isUtf8: boolean): string {
   if (isUtf8) {
     return new TextDecoder('utf-8').decode(bytes);
+  }
+  // 部分压缩工具写入的是 UTF-8 字节但漏掉了 UTF-8 标志位, 先尝试严格 UTF-8
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    // 不是合法的 UTF-8, 继续尝试其他编码
+  }
+  // 中文 Windows 的 ZIP 文件名常用 GBK/GB18030 编码
+  const gb18030Name = tryDecodeGB18030(bytes);
+  if (gb18030Name !== null) {
+    return gb18030Name;
   }
   return decodeCP437(bytes);
 }
