@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
   "捣蛋鬼的禁书库": "Troublemaker's Forbidden Library",
   "当前角色": "Current Character",
   "未打开角色卡": "No character card open",
@@ -36,4 +37,9 @@
   "AI 输出包含占位符后，消息发送或生成时，插件会自动把占位符替换为对应图片。": "Once the AI output contains a placeholder, the plugin replaces it with the matching image when the message is sent or generated.",
   "提示词示例：「当场景中出现角色远坂凛时，在正文中合适的位置插入 ${远坂凛}。」": "Prompt example: “Whenever Rin appears in the scene, insert ${Rin} at a suitable place in the text.”",
   "匹配规则：不区分大小写，可带扩展名（${远坂凛.png} 也能匹配）；会按文件名在所有角色目录中查找；代码块内的占位符不会被替换。": "Matching rules: case-insensitive; the extension is optional (${Rin.png} also matches); all character directories are searched by file name; placeholders inside code blocks are not replaced."
+=======
+  "插件示例": "Plugin Example",
+  "示例按钮": "Example Button",
+  "示例开关": "Example Switch"
+>>>>>>> c78877ecbba1ceb5d7507f33bcd5d55b9fb9431b
 }
