@@ -98,6 +98,42 @@ export async function listCharacterImages(characterName: string): Promise<string
   return files;
 }
 
+export type IllustrationEntry = {
+  /** 角色目录名 (已清洗) */
+  character: string;
+  /** 相对角色目录的路径, 如 "nailong.png" 或 "子目录/xxx.png" */
+  relativePath: string;
+};
+
+/** 递归列出沙箱 illustrations/ 下所有角色的图片, 返回 角色目录名 + 角色内相对路径 */
+export async function listAllImages(): Promise<IllustrationEntry[]> {
+  const root = await getIllustrationsRoot();
+  const entries: IllustrationEntry[] = [];
+
+  async function walk(dir: FileSystemDirectoryHandle, character: string, prefix: string) {
+    for await (const entry of dir.values()) {
+      if (entry.kind === 'directory') {
+        await walk(entry, character, prefix ? `${prefix}/${entry.name}` : entry.name);
+      } else if (isImageFileName(entry.name)) {
+        entries.push({ character, relativePath: prefix ? `${prefix}/${entry.name}` : entry.name });
+      }
+    }
+  }
+
+  for await (const entry of root.values()) {
+    if (entry.kind === 'directory') {
+      await walk(entry, entry.name, '');
+    }
+  }
+
+  entries.sort((a, b) =>
+    `${a.character}/${a.relativePath}`.localeCompare(`${b.character}/${b.relativePath}`, undefined, {
+      numeric: true,
+    }),
+  );
+  return entries;
+}
+
 /** 读取沙箱中某角色的某张图片 */
 export async function readCharacterImage(characterName: string, relativePath: string): Promise<Blob | null> {
   const root = await getIllustrationsRoot();

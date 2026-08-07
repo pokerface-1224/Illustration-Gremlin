@@ -94,6 +94,7 @@ import HelpOverlay from '@/HelpOverlay.vue';
 import PreviewOverlay from '@/PreviewOverlay.vue';
 import { getCurrentCharacterName } from '@/util/character';
 import { extractZipImages } from '@/util/archive';
+import { clearPublicApiCache } from '@/publicApi';
 import {
   clearImageLookupCache,
   deleteCharacterImage,
@@ -132,6 +133,7 @@ async function refreshImages() {
   // 图片列表变化后, 让聊天中的 ${名称} 占位符重新查找图片
   clearImageLookupCache();
   clearPlaceholderUrlCache();
+  clearPublicApiCache();
   reprocessAllMessages();
 }
 

@@ -42,6 +42,44 @@
 - 导入或删除图片后，已显示消息中的占位符会自动重新查找并更新，无需刷新页面
 - 替换后的图片以内联形式展示（宽约 2/3、最大高度 420px、圆角样式）
 
+### 供酒馆助手前端界面引用图片（接口）
+
+插件会提供一个全局接口 `IllustrationGremlin`，让酒馆助手（tavern_helper）渲染的前端界面可以通过
+接口引用本插件保存在 OPFS 中的图片（返回可直接用于 `<img src>` 的 blob URL），无需关心图片的存储细节。
+
+完整的接口文档见 [API.md](API.md)。
+
+- 接口挂载在酒馆主页面：`window.IllustrationGremlin`
+- 安装酒馆助手时，会自动注册为全局共享接口，前端界面中可 `await waitGlobalInitialized('IllustrationGremlin')`
+  后直接使用 `IllustrationGremlin`
+- 支持按角色名列出图片、按「角色名 + 相对路径」精确取图，或按文件名（与 `${图片名}` 相同的匹配规则）查找
+- 导入或删除图片后接口会清空缓存，重新查询即可拿到最新结果
+
+前端界面中使用示例：
+
+```ts
+$(() => {
+  void (async () => {
+    // 等待接口初始化（未安装酒馆助手时，可改用: const IllustrationGremlin = window.parent.IllustrationGremlin;）
+    await waitGlobalInitialized('IllustrationGremlin');
+
+    // 按文件名引用图片（不区分大小写，可带扩展名）
+    const url = await IllustrationGremlin.getImageUrlByName('远坂凛');
+    if (url) {
+      document.querySelector('img')!.src = url;
+    }
+
+    // 或先列出当前角色的图片，再逐个引用
+    const character = IllustrationGremlin.getCurrentCharacterName();
+    const images = await IllustrationGremlin.listImages(character ?? undefined);
+    const first = await IllustrationGremlin.getImageUrl(images[0].character, images[0].relativePath);
+  })();
+});
+```
+
+接口的方法与类型定义见 [tavern-helper/IllustrationGremlin.d.ts](tavern-helper/IllustrationGremlin.d.ts)，
+在酒馆助手前端界面项目中使用时，可把该文件复制到模板的 `@types/iframe/` 目录以获得类型提示。
+
 ### 多语言
 
 - 内置中文与英文界面，跟随 SillyTavern 的语言设置（英文翻译见 `i18n/en.json`）
@@ -93,6 +131,9 @@ public/scripts/extensions/third-party/Illustration-Gremlin
 
 如果需要图片真正保存在服务器磁盘上（例如给其他程序使用），需要服务端写入能力，
 当前插件只支持浏览器沙箱方案。
+
+其他程序（如同源的酒馆助手前端界面）可以通过 `IllustrationGremlin` 接口引用这些图片，
+具体用法见上文「供酒馆助手前端界面引用图片（接口）」。
 
 ## 开发
 
