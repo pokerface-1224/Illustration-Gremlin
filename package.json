@@ -1,6 +1,11 @@
 {
+<<<<<<< HEAD
   "name": "Illustration-Gremlin",
   "version": "1.1.0",
+=======
+  "name": "<插件名称>",
+  "version": "1.0.0",
+>>>>>>> 03c14be1e7fc8ca933f4b0367a4fb2ef5b73de52
   "scripts": {
     "build": "vite build",
     "watch": "vite build --watch --mode development",
@@ -60,7 +65,11 @@
     "pinia": "^3.0.4",
     "tailwindcss": "^4.3.3",
     "type-fest": "^4.41.0",
+<<<<<<< HEAD
     "vue": "^3.5.40",
+=======
+    "vue": "^3.5.41",
+>>>>>>> 03c14be1e7fc8ca933f4b0367a4fb2ef5b73de52
     "vue-final-modal": "^4.5.5",
     "zod": "^4.4.3"
   }
