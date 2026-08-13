@@ -7,6 +7,10 @@
 export {}
 declare global {
   const EffectScope: typeof import('vue').EffectScope
+<<<<<<< HEAD
+=======
+  const acceptHMRUpdate: typeof import('pinia').acceptHMRUpdate
+>>>>>>> f4129ea60a6332c92c6d17819aca0a1b420d99dd
   const asyncComputed: typeof import('@vueuse/core').asyncComputed
   const autoResetRef: typeof import('@vueuse/core').autoResetRef
   const computed: typeof import('vue').computed
@@ -20,6 +24,10 @@ declare global {
   const createEventHook: typeof import('@vueuse/core').createEventHook
   const createGlobalState: typeof import('@vueuse/core').createGlobalState
   const createInjectionState: typeof import('@vueuse/core').createInjectionState
+<<<<<<< HEAD
+=======
+  const createPinia: typeof import('pinia').createPinia
+>>>>>>> f4129ea60a6332c92c6d17819aca0a1b420d99dd
   const createReactiveFn: typeof import('@vueuse/core').createReactiveFn
   const createRef: typeof import('@vueuse/core').createRef
   const createReusableTemplate: typeof import('@vueuse/core').createReusableTemplate
@@ -31,9 +39,17 @@ declare global {
   const debouncedWatch: typeof import('@vueuse/core').debouncedWatch
   const defineAsyncComponent: typeof import('vue').defineAsyncComponent
   const defineComponent: typeof import('vue').defineComponent
+<<<<<<< HEAD
   const eagerComputed: typeof import('@vueuse/core').eagerComputed
   const effectScope: typeof import('vue').effectScope
   const extendRef: typeof import('@vueuse/core').extendRef
+=======
+  const defineStore: typeof import('pinia').defineStore
+  const eagerComputed: typeof import('@vueuse/core').eagerComputed
+  const effectScope: typeof import('vue').effectScope
+  const extendRef: typeof import('@vueuse/core').extendRef
+  const getActivePinia: typeof import('pinia').getActivePinia
+>>>>>>> f4129ea60a6332c92c6d17819aca0a1b420d99dd
   const getCurrentInstance: typeof import('vue').getCurrentInstance
   const getCurrentScope: typeof import('vue').getCurrentScope
   const getCurrentWatcher: typeof import('vue').getCurrentWatcher
@@ -49,6 +65,14 @@ declare global {
   const isShallow: typeof import('vue').isShallow
   const klona: typeof import('klona').klona
   const makeDestructurable: typeof import('@vueuse/core').makeDestructurable
+<<<<<<< HEAD
+=======
+  const mapActions: typeof import('pinia').mapActions
+  const mapGetters: typeof import('pinia').mapGetters
+  const mapState: typeof import('pinia').mapState
+  const mapStores: typeof import('pinia').mapStores
+  const mapWritableState: typeof import('pinia').mapWritableState
+>>>>>>> f4129ea60a6332c92c6d17819aca0a1b420d99dd
   const markRaw: typeof import('vue').markRaw
   const nextTick: typeof import('vue').nextTick
   const onActivated: typeof import('vue').onActivated
@@ -89,9 +113,18 @@ declare global {
   const resolveComponent: typeof import('vue').resolveComponent
   const resolveRef: typeof import('@vueuse/core').resolveRef
   const resolveUnref: typeof import('@vueuse/core').resolveUnref
+<<<<<<< HEAD
   const shallowReactive: typeof import('vue').shallowReactive
   const shallowReadonly: typeof import('vue').shallowReadonly
   const shallowRef: typeof import('vue').shallowRef
+=======
+  const setActivePinia: typeof import('pinia').setActivePinia
+  const setMapStoreSuffix: typeof import('pinia').setMapStoreSuffix
+  const shallowReactive: typeof import('vue').shallowReactive
+  const shallowReadonly: typeof import('vue').shallowReadonly
+  const shallowRef: typeof import('vue').shallowRef
+  const storeToRefs: typeof import('pinia').storeToRefs
+>>>>>>> f4129ea60a6332c92c6d17819aca0a1b420d99dd
   const syncRef: typeof import('@vueuse/core').syncRef
   const syncRefs: typeof import('@vueuse/core').syncRefs
   const t: typeof import('@sillytavern/scripts/i18n').t

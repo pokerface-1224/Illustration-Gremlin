@@ -1,6 +1,11 @@
 {
+<<<<<<< HEAD
   "name": "Illustration-Gremlin",
   "version": "1.1.0",
+=======
+  "name": "<插件名称>",
+  "version": "1.0.0",
+>>>>>>> f4129ea60a6332c92c6d17819aca0a1b420d99dd
   "scripts": {
     "build": "vite build",
     "watch": "vite build --watch --mode development",
@@ -21,7 +26,11 @@
     "@types/mark.js": "^8.11.12",
     "@types/showdown": "^2.0.6",
     "@types/toastr": "^2.1.43",
+<<<<<<< HEAD
     "@typescript-eslint/parser": "^8.66.0",
+=======
+    "@typescript-eslint/parser": "^8.67.0",
+>>>>>>> f4129ea60a6332c92c6d17819aca0a1b420d99dd
     "@vitejs/plugin-vue": "^6.0.8",
     "autoprefixer": "^10.5.4",
     "css-loader": "^7.1.4",
@@ -33,7 +42,11 @@
     "eslint-plugin-pinia": "^0.4.2",
     "eslint-plugin-vue": "^10.10.0",
     "globals": "^16.5.0",
+<<<<<<< HEAD
     "highlight.js": "^11.11.1",
+=======
+    "highlight.js": "^11.12.0",
+>>>>>>> f4129ea60a6332c92c6d17819aca0a1b420d99dd
     "postcss-load-config": "^6.0.1",
     "postcss-loader": "^8.2.1",
     "postcss-minify": "^1.2.0",
@@ -41,7 +54,11 @@
     "ts-node": "^10.9.2",
     "tslib": "^2.8.1",
     "typescript": "6.0.0-dev.20250807",
+<<<<<<< HEAD
     "typescript-eslint": "^8.66.0",
+=======
+    "typescript-eslint": "^8.67.0",
+>>>>>>> f4129ea60a6332c92c6d17819aca0a1b420d99dd
     "unplugin-auto-import": "^20.3.0",
     "unplugin-vue-components": "^29.2.0",
     "vite": "^7.3.6",
@@ -60,7 +77,11 @@
     "pinia": "^3.0.4",
     "tailwindcss": "^4.3.3",
     "type-fest": "^4.41.0",
+<<<<<<< HEAD
     "vue": "^3.5.40",
+=======
+    "vue": "^3.5.41",
+>>>>>>> f4129ea60a6332c92c6d17819aca0a1b420d99dd
     "vue-final-modal": "^4.5.5",
     "zod": "^4.4.3"
   }
