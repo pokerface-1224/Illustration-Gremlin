@@ -2,7 +2,8 @@
 
 一个 SillyTavern 扩展：打开角色卡后，在扩展面板中选择 zip 图包即可自动导入，
 图片保存在浏览器沙箱（OPFS）的 `illustrations/<角色卡名称>/` 目录中，面板内可预览、删除；
-还支持在对话中用 `${图片名}` 占位符把 OPFS 中的插图直接显示到聊天消息里。
+在对话中用 `${图片名}` 占位符把 OPFS 中的插图直接显示到聊天消息里。
+插件还为酒馆助手提供了一个接口，供前端调用插图。
 
 - 仓库地址：<https://github.com/pokerface-1224/Illustration-Gremlin>
 - 作者：pokerface1224
