@@ -2,7 +2,7 @@
   <div class="troublemaker-extension-settings">
     <div class="inline-drawer">
       <div class="inline-drawer-toggle inline-drawer-header">
-        <b>{{ t`捣蛋鬼的禁书库` }}</b>
+        <b>{{ t`插图精灵` }}</b>
         <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
       </div>
       <div class="inline-drawer-content">

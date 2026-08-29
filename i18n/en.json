@@ -1,5 +1,5 @@
 {
-  "捣蛋鬼的禁书库": "Troublemaker's Forbidden Library",
+  "插图精灵": "Troublemaker's Forbidden Library",
   "当前角色": "Current Character",
   "未打开角色卡": "No character card open",
   "导入图包": "Import Image Pack",
@@ -23,7 +23,7 @@
   "创作者：如何制作并分发图包": "Creators: How to Package and Distribute Image Packs",
   "让 AI 在文中插入插图": "Let the AI Insert Illustrations into Text",
   "在酒馆中打开一个角色卡（群聊场景下使用群名称）。": "Open a character card in SillyTavern (group chats use the group name).",
-  "展开「扩展」面板，找到「捣蛋鬼的禁书库」。": "Open the Extensions panel and find “Troublemaker's Forbidden Library”.",
+  "展开「扩展」面板，找到「插图精灵」。": "Open the Extensions panel and find “Troublemaker's Forbidden Library”.",
   "点击「导入图包」按钮，或直接选择 zip 压缩包（可多选），选好后会自动开始导入。": "Click “Import Image Pack”, or directly select zip archives (multiple allowed); importing starts automatically.",
   "导入完成后点击「预览插图」，可浏览当前角色的插图；悬停缩略图可删除图片。": "After importing, click “Preview Illustrations” to browse the current character's images; hover a thumbnail to delete it.",
   "图片保存在浏览器沙箱（OPFS）中，无需授权；换浏览器、换电脑或清除浏览器数据后图片会丢失。": "Images are stored in the browser sandbox (OPFS) without any authorization; they are lost if you switch browsers, devices, or clear browser data.",
