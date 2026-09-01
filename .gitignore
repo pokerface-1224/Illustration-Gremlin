@@ -1,6 +1,9 @@
 node_modules
+<<<<<<< HEAD
 illustrations
 .codex
+=======
+>>>>>>> 155aef882148eb5d140b5d419f123039d4238e5d
 
 .DS_Store
 Thumbs.db
