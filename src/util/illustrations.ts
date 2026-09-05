@@ -73,6 +73,62 @@ export async function writeCharacterImages(characterName: string, images: Archiv
   return written;
 }
 
+export type CharacterImageUpdateResult = {
+  /** 本次写入的图片总数（含覆盖与新增） */
+  total: number;
+  /** 覆盖的已有同名图片数 */
+  overwritten: number;
+  /** 新写入的图片数 */
+  added: number;
+};
+
+/** 更新图片到沙箱 illustrations/<角色名>/ 目录: 与现有完全同名的文件直接覆盖, 其余旧图保留 */
+export async function updateCharacterImages(
+  characterName: string,
+  images: ArchiveImage[],
+): Promise<CharacterImageUpdateResult> {
+  const root = await getIllustrationsRoot();
+  const characterDir = await root.getDirectoryHandle(sanitizeDirectoryName(characterName), { create: true });
+
+  const existingNames = new Set<string>();
+  for await (const entry of characterDir.values()) {
+    if (entry.kind === 'file') existingNames.add(entry.name);
+  }
+
+  const usedNames = new Set(existingNames);
+  const handledNames = new Set<string>();
+  let overwritten = 0;
+  let added = 0;
+
+  for (const image of images) {
+    let name = image.name;
+    // 同一压缩包展平后出现同名时, 仍追加序号, 避免覆盖同批次刚写入的图片
+    if (handledNames.has(name)) {
+      name = makeUniqueName(name, usedNames);
+    }
+
+    const overwriting = existingNames.has(name);
+    const fileHandle = await characterDir.getFileHandle(name, { create: true });
+    const writable = await fileHandle.createWritable({ keepExistingData: false });
+    await writable.write(image.blob);
+    await writable.close();
+
+    if (overwriting) {
+      overwritten += 1;
+    } else {
+      added += 1;
+    }
+    handledNames.add(name);
+    usedNames.add(name);
+  }
+
+  return {
+    total: handledNames.size,
+    overwritten,
+    added,
+  };
+}
+
 /** 递归列出沙箱 illustrations/<角色名>/ 下的图片, 返回相对路径 */
 export async function listCharacterImages(characterName: string): Promise<string[]> {
   const root = await getIllustrationsRoot();

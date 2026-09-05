@@ -25,13 +25,28 @@
               multiple
               @change="onFilesSelected"
             />
+            <input
+              ref="updateFileInput"
+              class="tmk-file-input tmk-update-file-input"
+              type="file"
+              accept=".zip"
+              multiple
+              @change="onUpdateFilesSelected"
+            />
             <div class="tmk-buttons">
               <input
                 class="menu_button"
                 type="button"
                 :value="importing ? t`导入中…` : t`导入图包`"
-                :disabled="importing"
+                :disabled="busy"
                 @click="onImportClick"
+              />
+              <input
+                class="menu_button"
+                type="button"
+                :value="updating ? t`更新中…` : t`插图更新`"
+                :disabled="busy"
+                @click="onUpdateClick"
               />
               <input
                 class="menu_button tmk-preview-button"
@@ -93,24 +108,29 @@ import { event_types, eventSource } from '@sillytavern/scripts/events';
 import HelpOverlay from '@/HelpOverlay.vue';
 import PreviewOverlay from '@/PreviewOverlay.vue';
 import { getCurrentCharacterName } from '@/util/character';
-import { extractZipImages } from '@/util/archive';
+import { extractZipImages, type ArchiveImage } from '@/util/archive';
 import { clearPublicApiCache } from '@/publicApi';
 import {
   clearImageLookupCache,
   deleteCharacterImage,
   listCharacterImages,
+  updateCharacterImages,
+  type CharacterImageUpdateResult,
   writeCharacterImages,
 } from '@/util/illustrations';
 import { clearPlaceholderUrlCache, reprocessAllMessages } from '@/util/placeholderImages';
 
 const fileInput = ref<HTMLInputElement | null>(null);
+const updateFileInput = ref<HTMLInputElement | null>(null);
 const selectedFiles = ref<File[]>([]);
 const importing = ref(false);
+const updating = ref(false);
 const currentCharacter = ref<string | null>(null);
 const images = ref<string[]>([]);
 const previewOpen = ref(false);
 const helpOpen = ref(false);
 
+const busy = computed(() => importing.value || updating.value);
 const selectedFileNames = computed(() => selectedFiles.value.map(file => file.name));
 
 function updateCurrentCharacter() {
@@ -141,13 +161,29 @@ function onFilesSelected(event: Event) {
   const input = event.target as HTMLInputElement;
   selectedFiles.value = Array.from(input.files ?? []);
   // 选好文件后自动开始导入
-  if (!importing.value && selectedFiles.value.length > 0) {
+  if (!busy.value && selectedFiles.value.length > 0) {
     void onImportClick();
   }
 }
 
+function onUpdateFilesSelected(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const files = Array.from(input.files ?? []);
+  if (files.length === 0) {
+    return;
+  }
+  selectedFiles.value = files;
+  if (updateFileInput.value) {
+    // 文件已转入状态管理, 避免下次点击更新时重复读取旧选择
+    updateFileInput.value.value = '';
+  }
+  if (!busy.value) {
+    void onUpdateClick();
+  }
+}
+
 async function onImportClick() {
-  if (importing.value) {
+  if (busy.value) {
     return;
   }
   const character = currentCharacter.value;
@@ -191,7 +227,58 @@ async function onImportClick() {
   }
 }
 
-async function importOneFile(file: File, character: string): Promise<number> {
+async function onUpdateClick() {
+  if (busy.value) {
+    return;
+  }
+  const character = currentCharacter.value;
+  if (!character) {
+    toastr.warning(t`请先打开一个角色卡再更新图包`);
+    return;
+  }
+  if (selectedFiles.value.length === 0) {
+    // 兜底: 从更新输入框直接读取, 避免状态丢失
+    const domFiles = updateFileInput.value?.files;
+    if (domFiles && domFiles.length > 0) {
+      selectedFiles.value = Array.from(domFiles);
+    } else {
+      // 未选择任何文件时, 直接打开更新用的文件选择框
+      updateFileInput.value?.click();
+      return;
+    }
+  }
+
+  updating.value = true;
+  const files = selectedFiles.value;
+  try {
+    let total = 0;
+    let overwritten = 0;
+    for (const file of files) {
+      const result = await updateOneFile(file, character);
+      total += result.total;
+      overwritten += result.overwritten;
+    }
+    toastr.success(t`更新成功：共 ${total} 张图片（覆盖 ${overwritten} 张同名旧图）`);
+    void refreshImages();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    toastr.error(message);
+  } finally {
+    updating.value = false;
+    // 仅在更新期间没有新选择时清理, 避免丢失用户刚选的新文件
+    if (selectedFiles.value === files) {
+      selectedFiles.value = [];
+      if (fileInput.value) {
+        fileInput.value.value = '';
+      }
+      if (updateFileInput.value) {
+        updateFileInput.value.value = '';
+      }
+    }
+  }
+}
+
+async function readZipImages(file: File): Promise<ArchiveImage[]> {
   const extension = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
   if (extension !== '.zip') {
     throw new Error(t`仅支持 zip 压缩包，请先将图片打包为 zip 再导入`);
@@ -201,8 +288,18 @@ async function importOneFile(file: File, character: string): Promise<number> {
   if (imagesInArchive.length === 0) {
     throw new Error(t`压缩包中没有找到图片文件`);
   }
+  return imagesInArchive;
+}
+
+async function importOneFile(file: File, character: string): Promise<number> {
+  const imagesInArchive = await readZipImages(file);
   await writeCharacterImages(character, imagesInArchive);
   return imagesInArchive.length;
+}
+
+async function updateOneFile(file: File, character: string): Promise<CharacterImageUpdateResult> {
+  const imagesInArchive = await readZipImages(file);
+  return updateCharacterImages(character, imagesInArchive);
 }
 
 async function onDeleteImage(relativePath: string) {
@@ -246,6 +343,10 @@ onBeforeUnmount(() => {
   flex: 1;
   min-width: 180px;
   max-width: 280px;
+}
+
+.tmk-update-file-input {
+  display: none;
 }
 
 .tmk-buttons {
