@@ -1,9 +1,8 @@
 import { getCurrentCharacterName } from '@/util/character';
 import {
   clearImageLookupCache,
-  findImageByName,
+  findCharacterImageByName,
   isSandboxStorageSupported,
-  listAllImages,
   listCharacterImages,
   readCharacterImage,
   sanitizeDirectoryName,
@@ -15,11 +14,13 @@ import {
  * - 以 `window.IllustrationGremlin` 挂在酒馆主页面 (同源 iframe 可通过 `window.parent.IllustrationGremlin` 访问);
  * - 安装酒馆助手 (tavern_helper) 时, 还会通过 `window.TavernHelper.initializeGlobal` 注册同名全局,
  *   使酒馆助手前端界面可以 `await waitGlobalInitialized('IllustrationGremlin')` 后直接使用本接口。
+ * - 角色隔离: 接口只允许访问「当前打开角色卡」的插图 (见 getCurrentCharacterName), 无法枚举或读取
+ *   其他角色卡的插图; 插件扩展面板中的「管理全部插图」是唯一的多角色管理入口, 不经过本接口。
  */
 
 export const PUBLIC_API_GLOBAL_NAME = 'IllustrationGremlin';
 
-const PUBLIC_API_VERSION = '1.3.0';
+const PUBLIC_API_VERSION = '1.4.0';
 
 const TAVERN_HELPER_RETRY_LIMIT = 20;
 const TAVERN_HELPER_RETRY_DELAY_MS = 500;
@@ -64,16 +65,16 @@ export type IllustrationGremlinApi = {
   getCurrentCharacterName(): string | null;
   /**
    * 列出图片信息。
-   * 不传参时列出所有角色的图片; 传角色名时只列出该角色 (支持原始角色名, 内部会清洗)。
+   * 只列出当前角色卡的图片: 不传参即当前角色; 传了其他角色名也会返回 [] (签名保留仅为兼容旧调用方)。
    */
   listImages(characterName?: string | null): Promise<IllustrationImageInfo[]>;
-  /** 获取某角色下某张图片的元信息; 不存在时返回 null */
+  /** 获取当前角色卡下某张图片的元信息; characterName 不是当前角色或图片不存在时返回 null */
   getImageInfo(characterName: string, relativePath: string): Promise<IllustrationImageInfo | null>;
-  /** 获取某角色下某张图片的 blob URL, 可直接用于 `<img src>`; 不存在时返回 null */
+  /** 获取当前角色卡下某张图片的 blob URL, 可直接用于 `<img src>`; characterName 不是当前角色时返回 null */
   getImageUrl(characterName: string, relativePath: string): Promise<string | null>;
-  /** 按文件名 (不含扩展名, 不区分大小写, 可带扩展名) 在所有角色目录中查找并返回 blob URL; 找不到时返回 null */
+  /** 按文件名 (不含扩展名, 不区分大小写, 可带扩展名) 仅在当前角色目录中查找并返回 blob URL; 找不到时返回 null */
   getImageUrlByName(name: string): Promise<string | null>;
-  /** 按文件名查找, 同时返回元信息与 blob URL; 找不到时返回 null */
+  /** 按文件名在当前角色目录中查找, 同时返回元信息与 blob URL; 找不到时返回 null */
   findImage(name: string): Promise<IllustrationImageRef | null>;
   /** 释放某个由本接口创建的 blob URL (引用它的 `<img>` 会失效, 请确保不再使用) */
   revokeUrl(url: string): void;
@@ -93,6 +94,18 @@ function normalizeName(name: string): string {
     .trim()
     .replace(/^["'`]+|["'`]+$/g, '')
     .toLowerCase();
+}
+
+function currentCharacter(): string | null {
+  return getCurrentCharacterName();
+}
+
+/** 调用方请求的角色是否就是当前角色卡 (省略角色名时按当前角色处理) */
+function isCurrentCharacter(characterName?: string | null): boolean {
+  const current = currentCharacter();
+  if (!current) return false;
+  if (!characterName) return true;
+  return sanitizeDirectoryName(characterName) === sanitizeDirectoryName(current);
 }
 
 function fileNameWithoutExtension(fileName: string): string {
@@ -135,17 +148,10 @@ function isAvailable(): boolean {
 
 async function listImages(characterName?: string | null): Promise<IllustrationImageInfo[]> {
   try {
-    if (!isSandboxStorageSupported()) return [];
-
-    if (characterName) {
-      const character = sanitizeDirectoryName(characterName);
-      const paths = await listCharacterImages(characterName);
-      const infos = await Promise.all(paths.map(path => toImageInfo(character, path)));
-      return infos.filter((info): info is IllustrationImageInfo => info !== null);
-    }
-
-    const entries = await listAllImages();
-    const infos = await Promise.all(entries.map(entry => toImageInfo(entry.character, entry.relativePath)));
+    if (!isSandboxStorageSupported() || !isCurrentCharacter(characterName)) return [];
+    const current = currentCharacter()!;
+    const paths = await listCharacterImages(current);
+    const infos = await Promise.all(paths.map(path => toImageInfo(current, path)));
     return infos.filter((info): info is IllustrationImageInfo => info !== null);
   } catch (error) {
     console.warn('[Illustration-Gremlin] 读取插图列表失败:', error);
@@ -155,7 +161,8 @@ async function listImages(characterName?: string | null): Promise<IllustrationIm
 
 async function getImageInfo(characterName: string, relativePath: string): Promise<IllustrationImageInfo | null> {
   try {
-    return await toImageInfo(characterName, relativePath);
+    if (!isCurrentCharacter(characterName)) return null;
+    return await toImageInfo(currentCharacter()!, relativePath);
   } catch (error) {
     console.warn('[Illustration-Gremlin] 读取插图信息失败:', error);
     return null;
@@ -164,8 +171,10 @@ async function getImageInfo(characterName: string, relativePath: string): Promis
 
 async function getImageUrl(characterName: string, relativePath: string): Promise<string | null> {
   try {
-    const key = `img:${cacheKey(characterName, relativePath)}`;
-    return await resolveUrl(key, () => readCharacterImage(characterName, relativePath));
+    if (!isCurrentCharacter(characterName)) return null;
+    const current = currentCharacter()!;
+    const key = `img:${cacheKey(current, relativePath)}`;
+    return await resolveUrl(key, () => readCharacterImage(current, relativePath));
   } catch (error) {
     console.warn('[Illustration-Gremlin] 读取插图失败:', error);
     return null;
@@ -174,10 +183,11 @@ async function getImageUrl(characterName: string, relativePath: string): Promise
 
 async function getImageUrlByName(name: string): Promise<string | null> {
   const normalized = normalizeName(name);
-  if (!normalized) return null;
+  const current = currentCharacter();
+  if (!normalized || !current) return null;
   try {
-    const key = `name:${normalized}`;
-    return await resolveUrl(key, async () => (await findImageByName(name))?.blob ?? null);
+    const key = `name:${sanitizeDirectoryName(current)}:${normalized}`;
+    return await resolveUrl(key, async () => (await findCharacterImageByName(current, name))?.blob ?? null);
   } catch (error) {
     console.warn('[Illustration-Gremlin] 按名称查找插图失败:', name, error);
     return null;
@@ -186,37 +196,35 @@ async function getImageUrlByName(name: string): Promise<string | null> {
 
 async function findImage(name: string): Promise<IllustrationImageRef | null> {
   const normalized = normalizeName(name);
-  if (!normalized) return null;
+  const current = currentCharacter();
+  if (!normalized || !current) return null;
   try {
-    const key = `name:${normalized}`;
+    const key = `name:${sanitizeDirectoryName(current)}:${normalized}`;
     const cachedUrl = urlCache.get(key);
     if (cachedUrl !== undefined) {
       // URL 已有缓存时, 重新解析一次元信息
-      const image = await findImageByName(name);
+      const image = await findCharacterImageByName(current, name);
       if (!image) return null;
-      const info = infoFromRelativePath(image.relativePath, image.blob);
+      const info = infoFromRelativePath(current, image.relativePath, image.blob);
       return { info, url: cachedUrl };
     }
 
-    const image = await findImageByName(name);
+    const image = await findCharacterImageByName(current, name);
     if (!image) return null;
     const url = URL.createObjectURL(image.blob);
     urlCache.set(key, url);
-    return { info: infoFromRelativePath(image.relativePath, image.blob), url };
+    return { info: infoFromRelativePath(current, image.relativePath, image.blob), url };
   } catch (error) {
     console.warn('[Illustration-Gremlin] 按名称查找插图失败:', name, error);
     return null;
   }
 }
 
-function infoFromRelativePath(relativePath: string, blob: Blob): IllustrationImageInfo {
-  const parts = relativePath.split('/').filter(Boolean);
-  const fileName = parts.pop() ?? relativePath;
-  const character = parts[0] ?? '';
-  const pathInCharacter = parts.slice(1).join('/');
+function infoFromRelativePath(characterName: string, relativePath: string, blob: Blob): IllustrationImageInfo {
+  const fileName = relativePath.split('/').filter(Boolean).pop() ?? relativePath;
   return {
-    character,
-    relativePath: pathInCharacter,
+    character: sanitizeDirectoryName(characterName),
+    relativePath,
     fileName,
     baseName: fileNameWithoutExtension(fileName),
     mimeType: blob.type || guessMimeType(fileName),

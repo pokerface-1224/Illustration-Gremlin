@@ -14,6 +14,9 @@
  *
  * @example
  * const IllustrationGremlin = window.parent.IllustrationGremlin;
+ *
+ * 角色隔离说明: 接口只允许访问「当前打开角色卡」(getCurrentCharacterName()) 的插图,
+ * 无法枚举或读取其他角色卡的插图。
  */
 declare const IllustrationGremlin: IllustrationGremlin.Static;
 
@@ -47,16 +50,16 @@ declare namespace IllustrationGremlin {
     getCurrentCharacterName(): string | null;
     /**
      * 列出图片信息。
-     * 不传参时列出所有角色的图片; 传角色名时只列出该角色 (支持原始角色名, 内部会清洗)。
+     * 只列出当前角色卡的图片: 不传参即当前角色; 传了其他角色名也会返回 [] (签名保留仅为兼容旧调用方)。
      */
     listImages(characterName?: string | null): Promise<ImageInfo[]>;
-    /** 获取某角色下某张图片的元信息; 不存在时返回 null */
+    /** 获取当前角色卡下某张图片的元信息; characterName 不是当前角色或图片不存在时返回 null */
     getImageInfo(characterName: string, relativePath: string): Promise<ImageInfo | null>;
-    /** 获取某角色下某张图片的 blob URL, 可直接用于 `<img src>`; 不存在时返回 null */
+    /** 获取当前角色卡下某张图片的 blob URL, 可直接用于 `<img src>`; characterName 不是当前角色时返回 null */
     getImageUrl(characterName: string, relativePath: string): Promise<string | null>;
-    /** 按文件名 (不含扩展名, 不区分大小写, 可带扩展名) 在所有角色目录中查找并返回 blob URL; 找不到时返回 null */
+    /** 按文件名 (不含扩展名, 不区分大小写, 可带扩展名) 仅在当前角色目录中查找并返回 blob URL; 找不到时返回 null */
     getImageUrlByName(name: string): Promise<string | null>;
-    /** 按文件名查找, 同时返回元信息与 blob URL; 找不到时返回 null */
+    /** 按文件名在当前角色目录中查找, 同时返回元信息与 blob URL; 找不到时返回 null */
     findImage(name: string): Promise<ImageRef | null>;
     /** 释放某个由本接口创建的 blob URL (引用它的 `<img>` 会失效, 请确保不再使用) */
     revokeUrl(url: string): void;

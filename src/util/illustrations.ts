@@ -348,6 +348,29 @@ export async function findImageByName(query: string): Promise<{ blob: Blob; rela
   return blob ? { blob, relativePath: entry.relativePath } : null;
 }
 
+/** 在当前角色目录内按文件名（可带扩展名、不区分大小写）查找图片, 不访问其他角色目录 */
+export async function findCharacterImageByName(
+  characterName: string,
+  query: string,
+): Promise<{ blob: Blob; relativePath: string } | null> {
+  const normalized = normalizeImageQuery(query);
+  if (!normalized) return null;
+
+  const paths = await listCharacterImages(characterName);
+  const lower = normalized.toLowerCase();
+  const fileNameOf = (path: string) => path.split('/').filter(Boolean).pop() ?? path;
+  const fullNameMatches = paths.filter(path => fileNameOf(path).toLowerCase() === lower);
+  const baseNameMatches = paths.filter(path => fileNameWithoutExtension(fileNameOf(path)).toLowerCase() === lower);
+
+  for (const path of [...fullNameMatches, ...baseNameMatches]) {
+    const blob = await readCharacterImage(characterName, path);
+    if (blob) {
+      return { blob, relativePath: path };
+    }
+  }
+  return null;
+}
+
 /** 清除按文件名查找时的索引缓存（导入/删除图片后调用, 让占位符立即生效） */
 export function clearImageLookupCache(): void {
   illustrationIndexCache = null;

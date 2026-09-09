@@ -1,7 +1,10 @@
 # Illustration-Gremlin 接口文档
 
-> 适用于插件 **v1.1.0+**。本文档描述插件对外提供的全局接口 `IllustrationGremlin`，
+> 适用于插件 **v1.4.0+**。本文档描述插件对外提供的全局接口 `IllustrationGremlin`，
 > 主要面向酒馆助手（tavern_helper）渲染的前端界面，也可供其他同源页面或扩展使用。
+>
+> **v1.4.0 起接口严格按“当前角色卡”隔离**：所有查询/取图接口都只能访问
+> `getCurrentCharacterName()` 对应角色目录里的插图，无法再列出或读取其他角色卡的插图。
 
 ## 1. 接口简介
 
@@ -12,7 +15,9 @@
 - 全局名称：`IllustrationGremlin`
 - 接口版本：`IllustrationGremlin.version`
 - 图片来源：`illustrations/<角色目录>/`（由插件在导入 zip 图包时写入）
-- 特性：按角色列出图片、按「角色 + 相对路径」精确取图、按文件名查找（与聊天占位符 `${图片名}` 相同的匹配规则）
+- 特性：只访问当前角色卡的插图——列出当前角色图片、按「相对路径」精确取图、按文件名在当前角色目录内查找
+- 角色隔离：传入非当前角色名会被视为无权访问（返回 `[]` / `null`），不会读取其他角色目录；
+  需要管理多张角色卡插图时请使用插件扩展面板的「管理全部插图」
 
 ## 2. 获取接口
 
@@ -78,7 +83,7 @@ if (!IllustrationGremlin.isAvailable()) {
 
 ### 4.1 `version: string`
 
-接口版本号。示例：`'1.3.0'`。
+接口版本号。示例：`'1.4.0'`。
 
 ### 4.2 `isAvailable(): boolean`
 
@@ -94,29 +99,33 @@ const character = IllustrationGremlin.getCurrentCharacterName();
 
 ### 4.4 `listImages(characterName?: string | null): Promise<IllustrationImageInfo[]>`
 
-列出图片元信息。
+列出当前角色卡的图片元信息。
 
 | 参数 | 类型 | 说明 |
 | --- | --- | --- |
-| `characterName` | `string \| null`（可选） | 角色名；省略、传 `null` 或空字符串时列出**所有角色**的图片；传入角色名时只列出该角色 |
+| `characterName` | `string \| null`（可选） | 为兼容旧调用方保留；传入**非当前角色**名时返回 `[]`，省略或传当前角色名时列出当前角色图片 |
 
-返回值：`IllustrationImageInfo[]`，读取失败或无图片时返回空数组，不会抛出异常。
+返回值：`IllustrationImageInfo[]`；未打开角色卡、传入其他角色名、读取失败或无图片时返回空数组，
+不会抛出异常。
 
 ```ts
 // 列出当前角色的图片
 const images = await IllustrationGremlin.listImages(IllustrationGremlin.getCurrentCharacterName() ?? undefined);
 
-// 列出所有角色的图片
-const all = await IllustrationGremlin.listImages();
+// 等价写法：省略角色名时默认就是当前角色
+const same = await IllustrationGremlin.listImages();
+
+// 传其他角色名也无法跨角色读取，只会返回 []
+const nothing = await IllustrationGremlin.listImages('其他角色卡名称');
 ```
 
 ### 4.5 `getImageInfo(characterName: string, relativePath: string): Promise<IllustrationImageInfo | null>`
 
-获取某角色下某张图片的元信息。
+获取当前角色卡下某张图片的元信息。
 
 | 参数 | 类型 | 说明 |
 | --- | --- | --- |
-| `characterName` | `string` | 角色名（可用原始角色名，内部会自动清洗） |
+| `characterName` | `string` | 角色名（可用原始角色名，内部会自动清洗）；**必须是当前角色**，否则返回 `null` |
 | `relativePath` | `string` | 相对角色目录的路径，如 `nailong.png` |
 
 返回值：`IllustrationImageInfo | null`，图片不存在或读取失败时返回 `null`。
@@ -127,11 +136,11 @@ const info = await IllustrationGremlin.getImageInfo('远坂凛', '远坂凛.png'
 
 ### 4.6 `getImageUrl(characterName: string, relativePath: string): Promise<string | null>`
 
-获取某角色下某张图片的 blob URL，可直接用于 `<img src>`。
+获取当前角色卡下某张图片的 blob URL，可直接用于 `<img src>`。
 
 | 参数 | 类型 | 说明 |
 | --- | --- | --- |
-| `characterName` | `string` | 角色名 |
+| `characterName` | `string` | 角色名；**必须是当前角色**，否则返回 `null` |
 | `relativePath` | `string` | 相对角色目录的路径 |
 
 返回值：`string | null`，图片不存在或读取失败时返回 `null`。
@@ -145,18 +154,18 @@ if (url) {
 
 ### 4.7 `getImageUrlByName(name: string): Promise<string | null>`
 
-按文件名在所有角色目录中查找图片并返回 blob URL。匹配规则与聊天占位符 `${图片名}` 完全一致：
+按文件名**仅在当前角色目录中**查找图片并返回 blob URL。匹配规则：
 
 - 不区分大小写；
 - 可带扩展名（`远坂凛` 与 `远坂凛.png` 均能匹配）；
 - 支持 `"名称"`、`'名称'`、`` `名称` `` 等带引号写法；
-- 多个角色目录存在同名图片时，取最先匹配到的一张。
+- 同名图片只会在当前角色目录内查找，不会命中其他角色卡的图片。
 
 | 参数 | 类型 | 说明 |
 | --- | --- | --- |
 | `name` | `string` | 图片文件名（可带或不带扩展名） |
 
-返回值：`string | null`，找不到图片时返回 `null`。
+返回值：`string | null`；未打开角色卡或当前角色目录中找不到图片时返回 `null`。
 
 ```ts
 const url = await IllustrationGremlin.getImageUrlByName('远坂凛');
@@ -164,9 +173,9 @@ const url = await IllustrationGremlin.getImageUrlByName('远坂凛');
 
 ### 4.8 `findImage(name: string): Promise<IllustrationImageRef | null>`
 
-按文件名查找图片，同时返回元信息与 blob URL（相当于 4.7 + 元信息）。
+按文件名在当前角色目录中查找图片，同时返回元信息与 blob URL（相当于 4.7 + 元信息）。
 
-返回值：`IllustrationImageRef | null`，找不到图片时返回 `null`。
+返回值：`IllustrationImageRef | null`；未打开角色卡或当前角色目录中找不到图片时返回 `null`。
 
 ```ts
 const ref = await IllustrationGremlin.findImage('远坂凛');
@@ -276,5 +285,11 @@ $(() => {
 
 **Q：前端界面需要展示“有哪些图片”给用户选择？**
 
-使用 `listImages()` 获取全部（或当前角色）的图片列表，配合
+使用 `listImages()` 获取当前角色卡的图片列表，配合
 `getImageUrl(character, relativePath)` 逐个渲染即可，参考第 5 节示例。
+
+**Q：为什么接口列不到 / 读不到其他角色卡的插图？**
+
+这是 v1.4.0 起有意的角色隔离：角色卡 HTML 前端只能访问当前角色卡的插图，
+避免一张角色卡读到其他卡的图片。需要跨角色整理插图时，请在酒馆扩展面板
+（插图精灵）中使用「管理全部插图」，那里是插件唯一的多角色管理入口。
