@@ -19,7 +19,7 @@ import {
 
 export const PUBLIC_API_GLOBAL_NAME = 'IllustrationGremlin';
 
-const PUBLIC_API_VERSION = '1.2.0';
+const PUBLIC_API_VERSION = '1.3.0';
 
 const TAVERN_HELPER_RETRY_LIMIT = 20;
 const TAVERN_HELPER_RETRY_DELAY_MS = 500;

@@ -63,6 +63,22 @@
             </span>
             <span v-else>{{ t`支持 zip 压缩包` }}</span>
           </div>
+          <div class="tmk-manage-row flex-container">
+            <input
+              class="menu_button"
+              type="button"
+              :value="t`管理全部插图`"
+              :disabled="busy"
+              @click="manageOpen = true"
+            />
+            <input
+              class="menu_button tmk-danger-button"
+              type="button"
+              :value="t`清空插图`"
+              :disabled="busy || images.length === 0"
+              @click="onDeleteAllImages"
+            />
+          </div>
         </div>
 
         <div class="tmk-block">
@@ -87,6 +103,8 @@
           @delete="onDeleteImage"
         />
 
+        <LibraryOverlay v-if="manageOpen" @close="onLibraryClose" />
+
         <hr class="sysHR" />
 
         <!-- 使用说明 -->
@@ -106,19 +124,19 @@
 <script setup lang="ts">
 import { event_types, eventSource } from '@sillytavern/scripts/events';
 import HelpOverlay from '@/HelpOverlay.vue';
+import LibraryOverlay from '@/LibraryOverlay.vue';
 import PreviewOverlay from '@/PreviewOverlay.vue';
 import { getCurrentCharacterName } from '@/util/character';
 import { extractZipImages, type ArchiveImage } from '@/util/archive';
-import { clearPublicApiCache } from '@/publicApi';
+import { syncAfterImageChange } from '@/util/imageSync';
 import {
-  clearImageLookupCache,
+  deleteAllCharacterImages,
   deleteCharacterImage,
   listCharacterImages,
   updateCharacterImages,
   type CharacterImageUpdateResult,
   writeCharacterImages,
 } from '@/util/illustrations';
-import { clearPlaceholderUrlCache, reprocessAllMessages } from '@/util/placeholderImages';
 
 const fileInput = ref<HTMLInputElement | null>(null);
 const updateFileInput = ref<HTMLInputElement | null>(null);
@@ -128,6 +146,7 @@ const updating = ref(false);
 const currentCharacter = ref<string | null>(null);
 const images = ref<string[]>([]);
 const previewOpen = ref(false);
+const manageOpen = ref(false);
 const helpOpen = ref(false);
 
 const busy = computed(() => importing.value || updating.value);
@@ -151,10 +170,7 @@ async function refreshImages() {
     images.value = [];
   }
   // 图片列表变化后, 让聊天中的 ${名称} 占位符重新查找图片
-  clearImageLookupCache();
-  clearPlaceholderUrlCache();
-  clearPublicApiCache();
-  reprocessAllMessages();
+  syncAfterImageChange();
 }
 
 function onFilesSelected(event: Event) {
@@ -316,6 +332,26 @@ async function onDeleteImage(relativePath: string) {
   }
 }
 
+async function onDeleteAllImages() {
+  const character = currentCharacter.value;
+  if (!character || images.value.length === 0 || busy.value) return;
+  if (!confirm(t`清空「${character}」的全部 ${images.value.length} 张插图？此操作不可恢复。`)) return;
+
+  try {
+    const deleted = await deleteAllCharacterImages(character);
+    toastr.success(t`已清空 ${deleted} 张插图`);
+    void refreshImages();
+  } catch (error) {
+    toastr.error(error instanceof Error ? error.message : String(error));
+  }
+}
+
+function onLibraryClose() {
+  manageOpen.value = false;
+  // 管理器可能删除了当前角色的插图, 关闭后同步面板状态
+  updateCurrentCharacter();
+}
+
 onMounted(() => {
   updateCurrentCharacter();
   eventSource.on(event_types.CHAT_CHANGED, updateCurrentCharacter);
@@ -360,6 +396,29 @@ onBeforeUnmount(() => {
 .tmk-buttons input {
   width: 100%;
   margin: 0;
+}
+
+.tmk-manage-row {
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.tmk-manage-row input {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+.tmk-danger-button {
+  background: transparent;
+  color: #ff6b6b;
+  box-shadow: inset 0 0 0 1px #ff6b6b;
+}
+
+.tmk-danger-button:disabled {
+  color: #8a8a8a;
+  box-shadow: inset 0 0 0 1px #6b6b6b;
+  opacity: 0.7;
 }
 
 /* 预览按钮与主按钮大小一致, 用描边样式作区分 */

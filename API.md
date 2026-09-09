@@ -78,7 +78,7 @@ if (!IllustrationGremlin.isAvailable()) {
 
 ### 4.1 `version: string`
 
-接口版本号。示例：`'1.2.0'`。
+接口版本号。示例：`'1.3.0'`。
 
 ### 4.2 `isAvailable(): boolean`
 

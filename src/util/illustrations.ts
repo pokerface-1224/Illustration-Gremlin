@@ -236,6 +236,104 @@ export async function deleteCharacterImage(characterName: string, relativePath: 
   await dir.removeEntry(fileName);
 }
 
+/** 递归删除某个角色目录下的全部文件与空子目录, 最后删除角色目录本身; 返回删除的图片张数 */
+export async function deleteAllCharacterImages(characterName: string): Promise<number> {
+  const root = await getIllustrationsRoot();
+  const dirName = sanitizeDirectoryName(characterName);
+  let characterDir: FileSystemDirectoryHandle;
+  try {
+    characterDir = await root.getDirectoryHandle(dirName);
+  } catch {
+    return 0;
+  }
+
+  async function removeTree(dir: FileSystemDirectoryHandle): Promise<number> {
+    let count = 0;
+    // 先收集再删除, 避免遍历时移除条目导致迭代器失效
+    const children: { name: string; kind: 'file' | 'directory' }[] = [];
+    for await (const entry of dir.values()) {
+      children.push({ name: entry.name, kind: entry.kind });
+    }
+    for (const child of children) {
+      if (child.kind === 'directory') {
+        const subDir = await dir.getDirectoryHandle(child.name);
+        count += await removeTree(subDir);
+        await dir.removeEntry(child.name);
+      } else {
+        if (isImageFileName(child.name)) {
+          count += 1;
+        }
+        await dir.removeEntry(child.name);
+      }
+    }
+    return count;
+  }
+
+  const count = await removeTree(characterDir);
+  await root.removeEntry(dirName);
+  return count;
+}
+
+/** 重命名某角色目录下的图片 (保持所在子目录不变); 校验空名、非法字符、图片扩展名与目标重名 */
+export async function renameCharacterImage(
+  characterName: string,
+  relativePath: string,
+  newFileName: string,
+): Promise<string> {
+  const name = newFileName.trim();
+  if (!name) {
+    throw new Error('文件名不能为空');
+  }
+  if (name.includes('/') || name.includes('\\')) {
+    throw new Error('文件名不能包含路径分隔符');
+  }
+  if (INVALID_PATH_CHARS.test(name)) {
+    INVALID_PATH_CHARS.lastIndex = 0;
+    throw new Error('文件名包含非法字符');
+  }
+  if (!isImageFileName(name)) {
+    throw new Error('文件名必须是受支持的图片格式');
+  }
+
+  const root = await getIllustrationsRoot();
+  const characterDir = await root.getDirectoryHandle(sanitizeDirectoryName(characterName));
+  const parts = relativePath.split('/').filter(Boolean);
+  const oldName = parts.pop();
+  if (!oldName) {
+    throw new Error('无效的文件路径');
+  }
+  if (oldName === name) {
+    return relativePath;
+  }
+  const dirPrefix = parts.join('/');
+
+  let dir = characterDir;
+  for (const part of parts) {
+    dir = await dir.getDirectoryHandle(part);
+  }
+
+  // 目标已存在时拒绝覆盖
+  try {
+    await dir.getFileHandle(name);
+    throw new Error('同名文件已存在');
+  } catch (error) {
+    if (error instanceof Error && error.message === '同名文件已存在') {
+      throw error;
+    }
+  }
+
+  // 用 复制 + 删除 实现改名, 兼容不支持 FileSystemFileHandle.move 的浏览器
+  const sourceHandle = await dir.getFileHandle(oldName);
+  const sourceFile = await sourceHandle.getFile();
+  const targetHandle = await dir.getFileHandle(name, { create: true });
+  const writable = await targetHandle.createWritable();
+  await writable.write(sourceFile);
+  await writable.close();
+  await dir.removeEntry(oldName);
+
+  return dirPrefix ? `${dirPrefix}/${name}` : name;
+}
+
 /** 按文件名（不含扩展名）查找沙箱 illustrations/ 下的图片, 返回 Blob 与相对路径 */
 export async function findImageByName(query: string): Promise<{ blob: Blob; relativePath: string } | null> {
   const normalized = normalizeImageQuery(query);
