@@ -1,13 +1,23 @@
 {
+<<<<<<< HEAD
   "display_name": "Illustration-Gremlin",
+=======
+  "display_name": "<插件名称>",
+>>>>>>> e000f17401bc15121c7e98e8b74f8f69bb0ff16c
   "loading_order": 120,
   "requires": [],
   "optional": [],
   "js": "dist/index.js",
   "css": "dist/index.css",
+<<<<<<< HEAD
   "author": "pokerface1224",
   "version": "1.4.0",
   "homePage": "https://github.com/pokerface-1224/Illustration-Gremlin",
+=======
+  "author": "<作者名称>",
+  "version": "1.0.0",
+  "homePage": "<仓库URL>",
+>>>>>>> e000f17401bc15121c7e98e8b74f8f69bb0ff16c
   "auto_update": true,
   "i18n": {
     "en": "i18n/en.json"
