@@ -15,6 +15,7 @@ const externals = {
   '@popperjs/core': 'Popper',
 } as const;
 
+<<<<<<< HEAD
 function resolveSillyTavernRelativePath(): string {
   const publicIndex = __dirname.lastIndexOf('public');
   if (publicIndex >= 0) {
@@ -27,6 +28,12 @@ function resolveSillyTavernRelativePath(): string {
 }
 
 const relative_sillytavern_path = resolveSillyTavernRelativePath();
+=======
+const relative_sillytavern_path = path.relative(
+  path.join(__dirname, 'dist'),
+  __dirname.substring(0, __dirname.lastIndexOf('public') + 6),
+);
+>>>>>>> 83e6cc212575a48c19774faad97f3bcf4a3ca234
 
 export default defineConfig(({ mode }) => ({
   plugins: [
@@ -42,6 +49,10 @@ export default defineConfig(({ mode }) => ({
       dtsMode: 'overwrite',
       imports: [
         'vue',
+<<<<<<< HEAD
+=======
+        'pinia',
+>>>>>>> 83e6cc212575a48c19774faad97f3bcf4a3ca234
         '@vueuse/core',
         { from: '@sillytavern/scripts/i18n', imports: ['t'] },
         { from: 'klona', imports: ['klona'] },
