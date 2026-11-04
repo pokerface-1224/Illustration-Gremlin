@@ -3,6 +3,12 @@ import { App } from 'vue';
 
 const app = createApp(Panel);
 
+<<<<<<< HEAD
+=======
+const pinia = createPinia();
+app.use(pinia);
+
+>>>>>>> 00190f2a17f05f9eae9ba186e2ab4c1b8ca4a764
 declare module 'vue' {
   interface ComponentCustomProperties {
     t: typeof t;
@@ -16,6 +22,10 @@ const i18n = {
 app.use(i18n);
 
 export function initPanel() {
+<<<<<<< HEAD
   const $app = $('<div id="troublemaker_forbidden_library">').appendTo('#extensions_settings2');
+=======
+  const $app = $('<div id="tavern_extension_example">').appendTo('#extensions_settings2');
+>>>>>>> 00190f2a17f05f9eae9ba186e2ab4c1b8ca4a764
   app.mount($app[0]);
 }
